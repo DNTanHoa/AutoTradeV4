@@ -203,7 +203,8 @@ def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_
 
     if signal['signal'] == "1":  # Tín hiệu Buy
         for config in shifts_config:
-            if last_price > position.price_open + config["price_shift"] * symbol_lot_standard and '' == signal[config["shift"]]:
+            if last_price > position.price_open + config["price_shift"] * symbol_lot_standard and '' == signal[
+                config["shift"]]:
                 new_sl_price = position.price_open + config["sl_multiplier"] * symbol_lot_standard
                 new_tp_price = position.tp + config["tp_multiplier"] * symbol_lot_standard
                 # update order
@@ -216,7 +217,8 @@ def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_
 
     elif signal['signal'] == "-1":  # Tín hiệu Sell
         for config in shifts_config:
-            if last_price < position.price_open - config["price_shift"] * symbol_lot_standard and signal[config["shift"]] == '':
+            if last_price < position.price_open - config["price_shift"] * symbol_lot_standard and signal[
+                config["shift"]] == '':
                 new_sl_price = position.price_open - config["sl_multiplier"] * symbol_lot_standard
                 new_tp_price = position.tp - config["tp_multiplier"] * symbol_lot_standard
                 # update order
@@ -290,9 +292,9 @@ def run_market_analysis():
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        df_signals = calculate_sl_tp(df_signals, simple_ma_strategy_config.min_sl,
-                                     simple_ma_strategy_config.min_tp,
-                                     simple_ma_strategy_config.lot_standard)
+        df_signals = calculate_sl_tp_with_entry_price(df_signals, simple_ma_strategy_config.min_sl,
+                                                      simple_ma_strategy_config.min_tp,
+                                                      simple_ma_strategy_config.lot_standard)
 
         last_signal = df_signals.loc[df_signals['time'].idxmax()]
         entry_price = last_signal['close']
