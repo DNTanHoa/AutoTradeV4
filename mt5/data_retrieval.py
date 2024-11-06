@@ -96,5 +96,68 @@ def get_history_orders(from_date, to_date):
         mt5.shutdown()
 
 
+def check_position_exists(position_type: int) -> bool:
+    """
+    Kiểm tra xem có tồn tại vị thế cụ thể hay không.
+
+    :param position_type: int - loại vị thế (mt5.ORDER_TYPE_BUY hoặc mt5.ORDER_TYPE_SELL)
+    :return: bool - True nếu tồn tại vị thế với loại position_type, False nếu không có
+    """
+    # Kết nối tới MetaTrader 5
+    if not mt5.initialize():
+        print("Không thể kết nối MetaTrader 5")
+        return False  # Trả về False nếu không kết nối được
+
+    # Lấy tất cả các vị thế hiện tại
+    positions = mt5.positions_get()
+    if positions is None:
+        print("Không lấy được vị thế")
+        mt5.shutdown()
+        return False  # Trả về False nếu không lấy được vị thế
+
+    # Kiểm tra xem có vị thế cụ thể nào tồn tại không
+    exists = any(pos.type == position_type for pos in positions)
+
+    # Đóng kết nối MetaTrader 5
+    mt5.shutdown()
+
+    return exists  # Trả về kết quả là kiểu bool
+
+
+def check_last_closed_position_type(days: int = 10) -> str:
+    """
+    Kiểm tra xem vị thế cuối cùng đã đóng là loại BUY hay SELL.
+
+    :return: str - "buy" nếu vị thế cuối cùng là mua, "sell" nếu là bán, "none" nếu không có vị thế nào đã đóng
+    """
+    # Kết nối tới MetaTrader 5
+    if not mt5.initialize():
+        print("Không thể kết nối MetaTrader 5")
+        return "none"
+
+    # Lấy tất cả các giao dịch đã đóng
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    deals = mt5.history_deals_get(from_=now - timedelta(days=days), to=now)  # Lấy lịch sử trong vòng 30 ngày qua
+    if deals is None or len(deals) == 0:
+        print("Không có vị thế nào đã đóng trong khoảng thời gian này")
+        mt5.shutdown()
+        return "none"
+
+    # Lấy giao dịch cuối cùng đã đóng
+    last_deal = deals[-1]  # Giao dịch cuối cùng trong danh sách
+
+    # Đóng kết nối MetaTrader 5
+    mt5.shutdown()
+
+    # Kiểm tra loại giao dịch cuối cùng
+    if last_deal.type == mt5.ORDER_TYPE_BUY:
+        return "buy"
+    elif last_deal.type == mt5.ORDER_TYPE_SELL:
+        return "sell"
+    else:
+        return "none"
+
+
 def shutdown_mt5():
     mt5.shutdown()

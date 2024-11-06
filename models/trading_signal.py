@@ -17,6 +17,7 @@ class Signal(BaseModel):
     lot_size: Optional[float] = None   # volume
     order_id: Optional[str] = None
     processed: bool = False
+    note: Optional[str] = None
     first_shift: Optional[bool] = None
     first_shift_sl: Optional[float] = None
     first_shift_tp: Optional[float] = None

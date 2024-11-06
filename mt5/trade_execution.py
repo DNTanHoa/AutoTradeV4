@@ -78,7 +78,7 @@ def close_position(symbol, ticket):
         return {"success": False, "ticket": ticket, "error_code": error_code}
 
 
-def get_open_positions() -> Dict[str, Optional[List[mt5.Position]]]:
+def get_open_positions() -> Dict[str, Optional[List[Dict]]]:
     positions = mt5.positions_get()
 
     if positions is None:

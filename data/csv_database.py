@@ -18,7 +18,7 @@ class CSVDatabase:
 
     def _create_file(self):
         with self.file_path.open(mode='w', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=self.model.__model_fields__.keys())
+            writer = csv.DictWriter(file, fieldnames=self.model.model_fields.keys())
             writer.writeheader()
 
     def _check_and_create_header(self):
@@ -32,7 +32,7 @@ class CSVDatabase:
         # Ensure the data matches the model's fields
         validated_data = self.model(**data)
         with self.file_path.open(mode='a', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=self.model.__model_fields__.keys())
+            writer = csv.DictWriter(file, fieldnames=self.model.model_fields.keys())
             writer.writerow(validated_data.model_dump())
 
     def update_row(self, key_field: str, key_value: Any, updated_data: dict):
@@ -63,8 +63,8 @@ class CSVDatabase:
     def _write_all_rows(self, rows: List[Dict[str, str]]):
         """Writes all rows to the CSV file with the specified fieldnames."""
         # Access fieldnames correctly, depending on whether __fields__ is a dict or property
-        fieldnames = list(self.model.__model_fields__.keys()) if isinstance(self.model.__model_fields__, dict) else list(
-            self.model.__model_fields__().keys())
+        fieldnames = list(self.model.model_fields.keys()) if isinstance(self.model.model_fields, dict) else list(
+            self.model.model_fields.keys())
 
         with self.file_path.open(mode='w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
