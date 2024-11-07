@@ -139,8 +139,8 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
     df_merged = pd.merge_asof(df_short, df_long_shift, on='time', suffixes=('_short', '_long'))
     df_merged['Signal'] = 0
     df_merged['Signal'] = df_merged['Signal'].astype(int)
-    df_merged['EntryPrice'] = 0.0
-    df_merged['EntryPrice'] = df_merged['EntryPrice'].astype(float)
+    df_merged['entry_price'] = 0.0
+    df_merged['entry_price'] = df_merged['entry_price'].astype(float)
     df_merged['BuyCounter'] = -1
     df_merged['SellCounter'] = -1
     df_merged['LimitEntry'] = simple_ma_strategy_config.limit_entry
@@ -176,6 +176,7 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
                 df_merged.at[i, 'Signal'] = 1  # Tín hiệu mua
                 df_merged.at[i, 'BuyCounter'] = counter
                 df_merged.at[i, 'LimitEntry'] = limit
+                df_merged.at[i, 'entry_price'] = pre_ma_short
                 counter = counter + 1
 
         if ((close_short < ma_short) and (close_short < pre_ma_long) and (rsi_short > rsi_short_low_threshold) and (
@@ -187,6 +188,7 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
                 df_merged.at[i, 'Signal'] = -1  # Tín hiệu bán
                 df_merged.at[i, 'SellCounter'] = counter
                 df_merged.at[i, 'LimitEntry'] = limit
+                df_merged.at[i, 'entry_price'] = pre_ma_short
                 counter = counter + 1
     return df_merged
 
@@ -203,8 +205,7 @@ def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_
 
     if signal['signal'] == "1":  # Tín hiệu Buy
         for config in shifts_config:
-            if last_price > position.price_open + config["price_shift"] * symbol_lot_standard and '' == signal[
-                config["shift"]]:
+            if last_price > position.price_open + config["price_shift"] * symbol_lot_standard and '' == signal[config["shift"]]:
                 new_sl_price = position.price_open + config["sl_multiplier"] * symbol_lot_standard
                 new_tp_price = position.tp + config["tp_multiplier"] * symbol_lot_standard
                 # update order
@@ -217,8 +218,7 @@ def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_
 
     elif signal['signal'] == "-1":  # Tín hiệu Sell
         for config in shifts_config:
-            if last_price < position.price_open - config["price_shift"] * symbol_lot_standard and signal[
-                config["shift"]] == '':
+            if last_price < position.price_open - config["price_shift"] * symbol_lot_standard and signal[config["shift"]] == '':
                 new_sl_price = position.price_open - config["sl_multiplier"] * symbol_lot_standard
                 new_tp_price = position.tp - config["tp_multiplier"] * symbol_lot_standard
                 # update order
@@ -297,7 +297,7 @@ def run_market_analysis():
                                                       simple_ma_strategy_config.lot_standard)
 
         last_signal = df_signals.loc[df_signals['time'].idxmax()]
-        entry_price = last_signal['close']
+        entry_price = last_signal['entry_price']
         sl_price = last_signal['SL']
         tp_price = last_signal['TP']
         buy_counter = last_signal['BuyCounter']
@@ -333,7 +333,7 @@ def run_market_analysis():
                     buy_counter=buy_counter,
                     processed=False
                 )
-                db.insert_row(signal_data.dict())
+                db.insert_row(signal_data.model_dump())
 
                 if last_signal['Signal'] == 1:
                     # Tín hiệu buy
@@ -348,7 +348,7 @@ def run_market_analysis():
         print(f"An error occurred: {str(e)}")
         # Optionally, assign a default value to timestamp if it was not initialized
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{timestamp} Market analysis finishedfinished (after error).........")
+        print(f"{timestamp} Market analysis finished (after error).........")
     return
 
 
