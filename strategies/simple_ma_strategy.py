@@ -167,8 +167,7 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
         if is_time_in_exclude_range(time, exclude_ranges):
             continue  # Bỏ qua tín hiệu nếu thời gian hiện tại nằm trong khoảng loại trừ
 
-        if ((close_short > pre_ma_short) and (close_short > pre_ma_long) and (rsi_short < rsi_short_high_threshold) and (
-                adx_short > adx_short_threshold)):
+        if (close_short > pre_ma_short) and (ma_short > pre_ma_long) and (rsi_short < rsi_short_high_threshold):
             if last_signal != 1:
                 last_signal = 1
                 counter = 0
@@ -179,8 +178,7 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
             df_merged.at[i, 'entry_price'] = close_short
             counter = counter + 1
 
-        if ((close_short < pre_ma_short) and (close_short < pre_ma_long) and (rsi_short > rsi_short_low_threshold) and (
-                adx_short > adx_short_threshold)):
+        if (close_short < pre_ma_short) and (ma_short < pre_ma_long) and (rsi_short > rsi_short_low_threshold):
             if last_signal != -1:
                 last_signal = -1
                 counter = 0

@@ -1,6 +1,6 @@
 import MetaTrader5 as mt5
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def initialize_mt5():
@@ -39,7 +39,7 @@ def get_account_info():
         return None
 
     # Chuyển đổi thông tin tài khoản thành từ điển để dễ dàng hiển thị
-    account_info_dict = account_info._asdict()
+    account_info_dict = account_info.model_dump()
 
     # Đóng kết nối MT5
     mt5.shutdown()
@@ -124,24 +124,30 @@ def check_last_closed_position_type(days: int = 10) -> str:
     """
     # Kết nối tới MetaTrader 5
 
-    # Lấy tất cả các giao dịch đã đóng
-    from datetime import datetime, timedelta
-    now = datetime.now()
-    deals = mt5.history_deals_get(from_=now - timedelta(days=days), to=now)  # Lấy lịch sử trong vòng 30 ngày qua
-    if deals is None or len(deals) == 0:
-        print("Không có vị thế nào đã đóng trong khoảng thời gian này")
-        return "none"
+    # Define the time range to retrieve recent deals (e.g., last 1 day)
+    from_date = datetime.now() - timedelta(days=days)
+    to_date = datetime.now() + timedelta(days=1)
 
-    # Lấy giao dịch cuối cùng đã đóng
-    last_deal = deals[-1]  # Giao dịch cuối cùng trong danh sách
+    orders = mt5.history_orders_get(from_date, to_date)
+    if orders is None or len(orders) == 0:
+        print("No orders found in the specified time range, error:", mt5.last_error())
+        return None
 
-    # Kiểm tra loại giao dịch cuối cùng
-    if last_deal.type == mt5.ORDER_TYPE_BUY:
-        return "buy"
-    elif last_deal.type == mt5.ORDER_TYPE_SELL:
-        return "sell"
-    else:
-        return "none"
+    # Convert deals to a list and sort by time to get the latest deal
+    orders = list(orders)
+    orders.sort(key=lambda order: order.time_setup, reverse=True)
+
+    # Check the latest closed position
+    for order in orders:
+        if order.type == mt5.ORDER_TYPE_BUY:
+            print("Last closed position was a SELL.")
+            return "sell"  # Lệnh kết thúc là 1 lệnh buy thì trước đó là 1 vi thế sell
+        elif order.type == mt5.ORDER_TYPE_SELL:
+            print("Last closed position was a BUY.")
+            return "buy"  # Lệnh kết thúc là 1 lệnh buy thì trước đó là 1 vi thế buy
+
+    print("No closed positions found.")
+    return "none"
 
 
 def shutdown_mt5():
