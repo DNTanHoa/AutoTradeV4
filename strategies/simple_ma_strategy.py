@@ -167,29 +167,29 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
         if is_time_in_exclude_range(time, exclude_ranges):
             continue  # Bỏ qua tín hiệu nếu thời gian hiện tại nằm trong khoảng loại trừ
 
-        if ((close_short > ma_short) and (close_short > pre_ma_long) and (rsi_short < rsi_short_high_threshold) and (
+        if ((close_short > pre_ma_short) and (close_short > pre_ma_long) and (rsi_short < rsi_short_high_threshold) and (
                 adx_short > adx_short_threshold)):
             if last_signal != 1:
                 last_signal = 1
                 counter = 0
-            if counter < limit:
-                df_merged.at[i, 'Signal'] = 1  # Tín hiệu mua
-                df_merged.at[i, 'BuyCounter'] = counter
-                df_merged.at[i, 'LimitEntry'] = limit
-                df_merged.at[i, 'entry_price'] = pre_ma_short
-                counter = counter + 1
 
-        if ((close_short < ma_short) and (close_short < pre_ma_long) and (rsi_short > rsi_short_low_threshold) and (
+            df_merged.at[i, 'Signal'] = 1  # Tín hiệu mua
+            df_merged.at[i, 'BuyCounter'] = counter
+            df_merged.at[i, 'LimitEntry'] = limit
+            df_merged.at[i, 'entry_price'] = close_short
+            counter = counter + 1
+
+        if ((close_short < pre_ma_short) and (close_short < pre_ma_long) and (rsi_short > rsi_short_low_threshold) and (
                 adx_short > adx_short_threshold)):
             if last_signal != -1:
                 last_signal = -1
                 counter = 0
-            if counter < limit:
-                df_merged.at[i, 'Signal'] = -1  # Tín hiệu bán
-                df_merged.at[i, 'SellCounter'] = counter
-                df_merged.at[i, 'LimitEntry'] = limit
-                df_merged.at[i, 'entry_price'] = pre_ma_short
-                counter = counter + 1
+
+            df_merged.at[i, 'Signal'] = -1  # Tín hiệu bán
+            df_merged.at[i, 'SellCounter'] = counter
+            df_merged.at[i, 'LimitEntry'] = limit
+            df_merged.at[i, 'entry_price'] = close_short
+            counter = counter + 1
     return df_merged
 
 
@@ -276,12 +276,15 @@ def run_market_analysis():
                                      adx_long_threshold=10,
                                      adx_short_threshold=10)
         last_signal = df_signals.loc[df_signals['time'].idxmax()]
+        pre_last_signal = df_signals.iloc[-2]
 
         print("*** ---------------------------------------------- ***")
         print(f"*\tLast signal is {last_signal['time']}\n"
               f"*\tMA Short: {last_signal['MA_short']}\n"
+              f"*\tPre MA Short: {pre_last_signal['MA_short']}\n"
               f"*\tClose Short: {last_signal['close_short']}\n"
               f"*\tMA Long: {last_signal['MA_long']}\n"
+              f"*\tPre MA Long: {pre_last_signal['MA_long']}\n"
               f"*\tClose Long: {last_signal['close_long']}\n"
               f"*\tRSI Short: {last_signal['RSI_short']}\n"
               f"*\tRSI Long: {last_signal['RSI_long']}\n"

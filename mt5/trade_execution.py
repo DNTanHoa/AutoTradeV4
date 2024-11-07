@@ -53,6 +53,7 @@ def place_order(symbol, volume, order_type, price=None, sl=None, tp=None, commen
 
     if result is None:
         print(f"Order failed: result is None")
+        print("Error code:", mt5.last_error())
         mt5.shutdown()
         return None
 
