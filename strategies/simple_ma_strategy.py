@@ -161,13 +161,16 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
 
         pre_ma_long = df_merged['MA_long'].iloc[i - 1]
         pre_ma_short = df_merged['MA_short'].iloc[i - 1]
+        pre_close_short = df_merged['MA_short'].iloc[i - 1]
         df_merged.at[i, 'Signal'] = 0
 
         # Loại bỏ các tín hiệu trong khung giờ cấu hình
         if is_time_in_exclude_range(time, exclude_ranges):
             continue  # Bỏ qua tín hiệu nếu thời gian hiện tại nằm trong khoảng loại trừ
 
-        if (close_short > pre_ma_short) and (close_short > ma_long) and (rsi_short < rsi_short_high_threshold):
+        if ((close_short > pre_ma_short) and (close_short > pre_ma_long)
+                and ((pre_ma_short >= pre_ma_long and pre_close_short < pre_ma_short) or (pre_ma_short < pre_ma_long and pre_close_short < pre_ma_long))
+                and (rsi_short < rsi_short_high_threshold)):
             if last_signal != 1:
                 last_signal = 1
                 counter = 0
@@ -175,10 +178,12 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
             df_merged.at[i, 'Signal'] = 1  # Tín hiệu mua
             df_merged.at[i, 'BuyCounter'] = counter
             df_merged.at[i, 'LimitEntry'] = limit
-            df_merged.at[i, 'entry_price'] = pre_ma_short if pre_ma_short > ma_long else ma_long
+            df_merged.at[i, 'entry_price'] = pre_ma_short if pre_ma_short > pre_ma_long else pre_ma_long
             counter = counter + 1
 
-        if (close_short < pre_ma_short) and (rsi_short > rsi_short_low_threshold):
+        if ((close_short < pre_ma_short) and (close_short < pre_ma_long)
+                and ((pre_ma_short >= pre_ma_long and pre_close_short > pre_ma_long) or (pre_ma_short < pre_ma_long and pre_close_short > pre_ma_short))
+                and (rsi_short > rsi_short_low_threshold)):
             if last_signal != -1:
                 last_signal = -1
                 counter = 0
@@ -186,7 +191,7 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
             df_merged.at[i, 'Signal'] = -1  # Tín hiệu bán
             df_merged.at[i, 'SellCounter'] = counter
             df_merged.at[i, 'LimitEntry'] = limit
-            df_merged.at[i, 'entry_price'] = pre_ma_short if pre_ma_short < ma_long else ma_long
+            df_merged.at[i, 'entry_price'] = pre_ma_short if pre_ma_short < pre_ma_long else pre_ma_long
             counter = counter + 1
     return df_merged
 
@@ -390,8 +395,8 @@ def run_market_execution():
                             break
 
                         # ------ Step 2.2: Kiểm tra lệnh cuối cùng phải lệnh buy không------ #
-                        last_order_type = check_last_closed_position_type(4)
-                        if last_order_type == 'buy':
+                        last_processed_row = db.get_last_row_by_condition(lambda row: row['processed'] == 'True' and row['note'] == '')
+                        if last_processed_row and last_processed_row['signal'] == "1":
                             signal['processed'] = 'True'
                             signal['lot_size'] = volume
                             signal['note'] = 'BUY EXISTED'
@@ -415,7 +420,7 @@ def run_market_execution():
                         print('{0} Đóng tất cả lệnh BUY......'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                         close_all_buy_orders()
 
-                        # ------ Step 2.1: Kiểm tra xem có lệnh BUY đang mở khng ------ #
+                        # ------ Step 2.1: Kiểm tra xem có lệnh BUY đang mở không ------ #
                         is_sell_exist = check_position_exists(mt5.ORDER_TYPE_SELL)
                         if is_sell_exist:
                             signal['processed'] = 'True'
@@ -424,9 +429,9 @@ def run_market_execution():
                             db.update_row('signal_key', signal_key, signal)
                             break
 
-                        # ------ Step 2.2: Kiểm tra lệnh cuối cùng phải lệnh buy không------ #
-                        last_order_type = check_last_closed_position_type(4)
-                        if last_order_type == 'sell':
+                        # ------ Step 2.2: Kiểm tra lệnh cuối cùng phải lệnh sell không------ #
+                        last_processed_row = db.get_last_row_by_condition(lambda row: row['processed'] == 'True' and row['note'] == '')
+                        if last_processed_row and last_processed_row['signal'] == "-1":
                             signal['processed'] = 'True'
                             signal['lot_size'] = volume
                             signal['note'] = 'SELL EXISTED'

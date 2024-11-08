@@ -113,3 +113,32 @@ class CSVDatabase:
                     unprocessed_rows.append(row)
 
         return unprocessed_rows
+
+    def get_last_row(self) -> Optional[dict]:
+        """Retrieve the last row in the CSV file."""
+        with self.file_path.open(mode='r', newline='') as file:
+            reader = csv.DictReader(file)
+            rows = list(reader)
+            return rows[-1] if rows else None
+
+    def get_last_row_by_condition(self, condition: Callable[[Dict[str, str]], bool]) -> Optional[dict]:
+        """
+        Retrieve the last row that matches the specified condition.
+
+        Args:
+            condition (Callable[[Dict[str, str]], bool]): A function that takes a row (dict) as input
+                                                          and returns True if the row matches the condition,
+                                                          otherwise False.
+
+        Returns:
+            Optional[dict]: The last row that matches the condition, or None if no match is found.
+        """
+        with self.file_path.open(mode='r', newline='') as file:
+            reader = csv.DictReader(file)
+            rows = list(reader)  # Load all rows into memory
+
+            # Iterate in reverse to find the last matching row based on the physical order
+        for row in reversed(rows):
+            if condition(row):
+                return row
+        return None
