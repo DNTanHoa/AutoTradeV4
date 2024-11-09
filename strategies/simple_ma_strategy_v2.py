@@ -33,6 +33,7 @@ from models.trading_signal import Signal
 import sys
 import logging
 
+
 simple_ma_strategy_config = load_config()
 db = CSVDatabase(Signal, simple_ma_strategy_config.csv_file)
 is_strategy_running = False
@@ -73,8 +74,8 @@ def get_combine_data(symbol, timeframe_short, timeframe_long, start_date, end_da
     df_short['time'] = pd.to_datetime(df_short['time'], unit='s')
     df_short['time'] = df_short['time'].dt.tz_localize(pytz.utc).dt.tz_convert(vietnam_timezone)
 
-    # if not df_short.empty:
-    #     df_short = df_short.iloc[:-1]
+    if not df_short.empty:
+        df_short = df_short.iloc[:-1]
     df_short['time'] = pd.to_datetime(df_short['time'], unit='s')
 
     # Cào dữ liệu khung thời gian dài
@@ -89,8 +90,8 @@ def get_combine_data(symbol, timeframe_short, timeframe_long, start_date, end_da
     df_long['time'] = pd.to_datetime(df_long['time'], unit='s')
     df_long['time'] = df_long['time'].dt.tz_localize(pytz.utc).dt.tz_convert(vietnam_timezone)
 
-    # if not df_long.empty:
-    #     df_long = df_long.iloc[:-1]
+    if not df_long.empty:
+        df_long = df_long.iloc[:-1]
     df_long['time'] = pd.to_datetime(df_long['time'], unit='s')
 
     # Đóng kết nối MetaTrader 5
@@ -123,6 +124,17 @@ def calculate_technical_indicator(df, rsi_period, ma_period, atr_period=14, adx_
     atr(df, atr_period)
     adx(df, adx_period)
     df['MA'] = df[f'sma_{ma_period}']
+    df['RSI'] = df[f'RSI_{rsi_period}']
+    return df
+
+
+def calculate_technical_indicator_v2(df, rsi_period, ma_period, atr_period=14, adx_period=14, bb_period=20):
+    rsi(df, rsi_period)
+    bollinger_bands(df, period=bb_period, multiplier=2)
+    ema(df, ma_period)
+    atr(df, atr_period)
+    adx(df, adx_period)
+    df['MA'] = df[f'ema_{ma_period}']
     df['RSI'] = df[f'RSI_{rsi_period}']
     return df
 
