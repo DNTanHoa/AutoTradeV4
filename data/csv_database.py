@@ -142,3 +142,18 @@ class CSVDatabase:
             if condition(row):
                 return row
         return None
+
+    def get_last_n_rows(self, n: int) -> List[Dict[str, str]]:
+        """
+        Retrieve the last n rows in the CSV file.
+
+        Args:
+            n (int): The number of rows to retrieve from the end of the file.
+
+        Returns:
+            List[Dict[str, str]]: A list of the last n rows.
+        """
+        with self.file_path.open(mode='r', newline='') as file:
+            reader = csv.DictReader(file)
+            rows = list(reader)
+            return rows[-n:] if rows else []

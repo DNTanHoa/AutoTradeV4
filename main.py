@@ -1,6 +1,7 @@
 import sys
 import logging
-from strategies.simple_ma_strategy import run_simple_ma_strategy, start_strategy, stop_strategy
+from strategies.simple_ma_strategy import run_simple_ma_strategy
+from strategies.simple_ma_strategy_v2 import run_simple_ma_strategy_v2
 import sys
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -12,6 +13,7 @@ import builtins
 
 strategies = {
     1: {"name": "Simple MA Strategy", "function": run_simple_ma_strategy},
+    2: {"name": "Simple MA Strategy", "function": run_simple_ma_strategy_v2},
 }
 
 primary_color: str = "cyan"
