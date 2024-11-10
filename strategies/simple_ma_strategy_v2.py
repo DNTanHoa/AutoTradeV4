@@ -119,12 +119,12 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
 
     # ------ Step 3: Xác định tín hiệu giao dịch ở điểm cuối------ #
     if not is_time_in_exclude_range(time, exclude_ranges):
-        if last_short['close'] > last_short['MA'] and last_long['close'] > last_long['MA']:
+        if last_short['close'] > last_short['MA'] and last_long['close'] > last_long['MA'] and last_short['RSI'] < rsi_short_high_threshold:
             df_short.iloc[-1, df_short.columns.get_loc('Signal')] = 1     # Tín hiệu buy
             df_short.iloc[-1, df_short.columns.get_loc('entry_price')] = last_short['close']
             df_short.iloc[-1, df_short.columns.get_loc('SL')] = last_short['close'] - simple_ma_strategy_config.min_sl
             df_short.iloc[-1, df_short.columns.get_loc('TP')] = last_short['close'] + simple_ma_strategy_config.min_tp
-        elif last_short['close'] < last_short['MA'] and last_long['close'] < last_long['MA']:
+        elif last_short['close'] < last_short['MA'] and last_long['close'] < last_long['MA'] and last_short['RSI'] > rsi_short_low_threshold:
             df_short.iloc[-1, df_short.columns.get_loc('Signal')] = -1    # Tín hiệu sell
             df_short.iloc[-1, df_short.columns.get_loc('entry_price')] = last_short['close']
             df_short.iloc[-1, df_short.columns.get_loc('SL')] = last_short['close'] + simple_ma_strategy_config.min_sl
@@ -216,6 +216,9 @@ def run_market_analysis():
         calculate_technical_indicator(df_long, simple_ma_strategy_config.rsi_long_period,
                                       simple_ma_strategy_config.ma_long_period)
 
+        last_long = df_long.iloc[-1]
+        last_short = df_long.iloc[-1]
+
         # ------ Step 3: Xác định tín hiệu buy hoặc sell & điểm SL và TP ------ #
         df_signals = generate_signal(df_long, df_short, simple_ma_strategy_config.limit_entry,
                                      exclude_ranges=exclude_ranges,
@@ -228,14 +231,12 @@ def run_market_analysis():
 
         print("*** ---------------------------------------------- ***")
         print(f"*\tLast signal is {last_signal['time']}\n"
-              f"*\tMA Short: {last_signal['MA_short']}\n"
-              f"*\tClose Short: {last_signal['close_short']}\n"
-              f"*\tMA Long: {last_signal['MA_long']}\n"
-              f"*\tClose Long: {last_signal['close_long']}\n"
-              f"*\tRSI Short: {last_signal['RSI_short']}\n"
-              f"*\tRSI Long: {last_signal['RSI_long']}\n"
-              f"*\tADX Short: {last_signal['adx_short']}\n"
-              f"*\tADX Long: {last_signal['adx_long']}\n"
+              f"*\tMA Short: {last_signal['MA']}\n"
+              f"*\tClose Short: {last_signal['close']}\n"
+              f"*\tMA Long: {last_long['MA']}\n"
+              f"*\tClose Long: {last_long['close']}\n"
+              f"*\tRSI Short: {last_short['RSI']}\n"
+              f"*\tRSI Long: {last_long['RSI']}\n"
               f"*\tLast Signal: {last_signal['Signal']}")
         print("*** ---------------------------------------------- ***")
 

@@ -13,7 +13,7 @@ import builtins
 
 strategies = {
     1: {"name": "Simple MA Strategy", "function": run_simple_ma_strategy},
-    2: {"name": "Simple MA Strategy", "function": run_simple_ma_strategy_v2},
+    2: {"name": "Simple MA Strategy V22", "function": run_simple_ma_strategy_v2},
 }
 
 primary_color: str = "cyan"
