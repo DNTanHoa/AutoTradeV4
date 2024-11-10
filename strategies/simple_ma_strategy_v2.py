@@ -119,18 +119,20 @@ def generate_signal(df_long, df_short, limit, exclude_ranges,
 
     # ------ Step 3: Xác định tín hiệu giao dịch ở điểm cuối------ #
     if not is_time_in_exclude_range(time, exclude_ranges):
-        if last_short['close'] > last_short['MA'] and last_long['close'] > last_long['MA'] and last_short['RSI'] < rsi_short_high_threshold:
-            df_short.iloc[-1, df_short.columns.get_loc('Signal')] = 1     # Tín hiệu buy
+        if last_short['close'] > last_short['MA'] and last_long['close'] > last_long['MA'] and last_short[
+            'RSI'] < rsi_short_high_threshold:
+            df_short.iloc[-1, df_short.columns.get_loc('Signal')] = 1  # Tín hiệu buy
             df_short.iloc[-1, df_short.columns.get_loc('entry_price')] = last_short['close']
             df_short.iloc[-1, df_short.columns.get_loc('SL')] = last_short['close'] - simple_ma_strategy_config.min_sl
             df_short.iloc[-1, df_short.columns.get_loc('TP')] = last_short['close'] + simple_ma_strategy_config.min_tp
-        elif last_short['close'] < last_short['MA'] and last_long['close'] < last_long['MA'] and last_short['RSI'] > rsi_short_low_threshold:
-            df_short.iloc[-1, df_short.columns.get_loc('Signal')] = -1    # Tín hiệu sell
+        elif last_short['close'] < last_short['MA'] and last_long['close'] < last_long['MA'] and last_short[
+            'RSI'] > rsi_short_low_threshold:
+            df_short.iloc[-1, df_short.columns.get_loc('Signal')] = -1  # Tín hiệu sell
             df_short.iloc[-1, df_short.columns.get_loc('entry_price')] = last_short['close']
             df_short.iloc[-1, df_short.columns.get_loc('SL')] = last_short['close'] + simple_ma_strategy_config.min_sl
             df_short.iloc[-1, df_short.columns.get_loc('TP')] = last_short['close'] - simple_ma_strategy_config.min_tp
         else:
-            df_short.iloc[-1, df_short.columns.get_loc('Signal')] = 0     # Không có tín hiệu
+            df_short.iloc[-1, df_short.columns.get_loc('Signal')] = 0  # Không có tín hiệu
         return df_short
 
     return df_short
@@ -142,6 +144,7 @@ def check_same_signal(last_n_rows: list, signal_to_check: str) -> bool:
 
     Args:
         last_n_rows (list): Danh sách chứa các dòng dữ liệu để kiểm tra.
+        signal_to_check: buy or sell
 
     Returns:
         bool: True nếu tất cả các dòng có cùng giá trị signal, False nếu ngược lại.
@@ -153,7 +156,7 @@ def check_same_signal(last_n_rows: list, signal_to_check: str) -> bool:
     return all(row['signal'] == signal_to_check for row in last_n_rows)
 
 
-def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_price):
+def process_trailing_stop(position, signal, last_price, symbol_lot_standard, max_price):
     shifts_config = [
         {"shift": "second_shift", "price_shift": 2, "sl_multiplier": 1, "tp_multiplier": 1},
         {"shift": "third_shift", "price_shift": 3, "sl_multiplier": 2, "tp_multiplier": 1.5},
@@ -165,7 +168,9 @@ def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_
 
     if signal['signal'] == "1":  # Tín hiệu Buy
         for config in shifts_config:
-            if last_price > position.price_open + config["price_shift"] * symbol_lot_standard and '' == signal[config["shift"]]:
+            if (max_price > position.price_open + config["price_shift"] * symbol_lot_standard and
+                last_price > position.price_open + config["sl_multiplier"] * symbol_lot_standard and
+                    '' == signal[config["shift"]]):
                 new_sl_price = position.price_open + config["sl_multiplier"] * symbol_lot_standard
                 new_tp_price = position.tp + config["tp_multiplier"] * symbol_lot_standard
                 # update order
@@ -178,7 +183,9 @@ def process_trailing_stop(position, signal, last_price, symbol_lot_standard, tp_
 
     elif signal['signal'] == "-1":  # Tín hiệu Sell
         for config in shifts_config:
-            if last_price < position.price_open - config["price_shift"] * symbol_lot_standard and signal[config["shift"]] == '':
+            if (max_price < position.price_open - config["price_shift"] * symbol_lot_standard and
+                last_price < position.price_open - config["sl_multiplier"] * symbol_lot_standard and
+                    '' == signal[config["shift"]]):
                 new_sl_price = position.price_open - config["sl_multiplier"] * symbol_lot_standard
                 new_tp_price = position.tp - config["tp_multiplier"] * symbol_lot_standard
                 # update order
@@ -432,11 +439,12 @@ def run_risk_management():
 
             signal_type = int(signal['signal'])
             entry_price = float(signal['entry'])
+            max_price = last_data['high'] if signal_type == 1 else last_data['low']
             sl_price = float(signal['sl'])
             tp_price = float(signal['tp'])
 
             process_trailing_stop(position=position, signal=signal, last_price=last_price,
-                                  symbol_lot_standard=simple_ma_strategy_config.lot_standard, tp_price=tp_price)
+                                  symbol_lot_standard=simple_ma_strategy_config.lot_standard, max_price=max_price)
 
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"{timestamp} Risk management finished.........")
